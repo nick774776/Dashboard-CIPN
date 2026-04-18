@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CIPN Epidemiology Dashboard · Global Burden 2025</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #0a0c0f;
+  --bg2: #111418;
+  --bg3: #181c22;
+  --bg4: #1f242c;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8ecf0;
+  --text2: #8a9ab0;
+  --text3: #5a6a7e;
+  --red: #e84545;
+  --red2: #ff6b6b;
+  --amber: #f59e0b;
+  --amber2: #fbbf24;
+  --blue: #3b82f6;
+  --blue2: #60a5fa;
+  --teal: #14b8a6;
+  --teal2: #2dd4bf;
+  --purple: #8b5cf6;
+  --purple2: #a78bfa;
+  --green: #22c55e;
+  --accent: #e84545;
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body: 'Outfit', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ── GRAIN OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.6;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: rgba(10,12,15,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.nav-title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+}
+
+.nav-links a {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text3);
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover { color: var(--text); }
+
+.nav-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: rgba(232,69,69,0.15);
+  color: var(--red2);
+  border: 1px solid rgba(232,69,69,0.3);
+  padding: 3px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.05em;
+}
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  padding: 120px 2rem 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.hero-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+  opacity: 0.75;
+}
+
+.hero-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.2s forwards;
+}
+
+.hero-img {
+  width: min(100%, 760px);
+  display: block;
+  margin-bottom: 1.5rem;
+  border-radius: 24px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(42px, 7vw, 88px);
+  line-height: 1.02;
+  color: var(--text);
+  margin-bottom: 1rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.35s forwards;
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--red2);
+}
+
+.hero-registration,
+.hero-guidance {
+  font-size: 18px;
+  max-width: 560px;
+  line-height: 1.4;
+  margin-bottom: 0.8rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.65s forwards;
+}
+
+.hero-registration {
+  color: #fbbf24;
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+.hero-guidance {
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.hero-guidance strong {
+  display: inline-block;
+  color: #a855f7;
+  font-size: 3rem;
+  line-height: 1.05;
+}
+
+.hero-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hero-meta-val {
+  font-family: var(--font-display);
+  font-size: 32px;
+  color: var(--text);
+}
+
+.hero-meta-lbl {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.hero-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(232,69,69,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232,69,69,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+.hero-glow {
+  position: absolute;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(232,69,69,0.06) 0%, transparent 70%);
+  top: -200px; right: -100px;
+  pointer-events: none;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── SCROLL INDICATOR ── */
+.scroll-hint {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  animation: fadeUp 0.8s 1.2s forwards;
+}
+
+.scroll-hint span {
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.scroll-line {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, var(--accent), transparent);
+  animation: scrollPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes scrollPulse {
+  0%,100% { opacity: 0.3; transform: scaleY(1); }
+  50% { opacity: 1; transform: scaleY(0.6); }
+}
+
+/* ── SECTIONS ── */
+.section {
+  padding: 5rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.section-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--text);
+}
+
+.section-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── KPI CARDS ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 3rem;
+}
+
+.kpi {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1),
+              background 0.3s ease,
+              box-shadow 0.3s ease;
+  cursor: default;
+}
+
+/* animated gradient border via pseudo-element */
+.kpi::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 15px;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--angle, 0deg),
+    transparent 0%,
+    transparent 60%,
+    var(--kpi-color, rgba(255,255,255,0.3)) 80%,
+    transparent 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  animation: borderSpin 3s linear infinite paused;
+}
+
+.kpi:hover::after {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes borderSpin {
+  to { --angle: 360deg; }
+}
+
+/* top accent bar */
+.kpi::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  transition: height 0.3s ease, opacity 0.3s ease;
+  opacity: 0.8;
+}
+
+.kpi:hover::before {
+  height: 3px;
+  opacity: 1;
+}
+
+/* glow on hover */
+.kpi:hover {
+  transform: translateY(-4px) scale(1.01);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+}
+
+/* inner shimmer sweep on hover */
+.kpi .kpi-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255,255,255,0.04) 50%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  background-position: -100% 0;
+  transition: background-position 0.6s ease;
+  pointer-events: none;
+  border-radius: 14px;
+}
+
+.kpi:hover .kpi-shimmer {
+  background-position: 200% 0;
+}
+
+/* color-specific glow + border color variable */
+.kpi.red   { --kpi-color: var(--red);    }
+.kpi.amber { --kpi-color: var(--amber);  }
+.kpi.blue  { --kpi-color: var(--blue);   }
+.kpi.teal  { --kpi-color: var(--teal);   }
+.kpi.purple{ --kpi-color: var(--purple); }
+.kpi.green { --kpi-color: var(--green);  }
+
+.kpi.red:hover   { box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 24px rgba(232,69,69,0.15); }
+.kpi.amber:hover { box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 24px rgba(245,158,11,0.15); }
+.kpi.blue:hover  { box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 24px rgba(59,130,246,0.15); }
+.kpi.teal:hover  { box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 24px rgba(20,184,166,0.15); }
+.kpi.purple:hover{ box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 24px rgba(139,92,246,0.15); }
+.kpi.green:hover { box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 24px rgba(34,197,94,0.15); }
+
+.kpi.red::before    { background: linear-gradient(90deg, var(--red), var(--red2)); }
+.kpi.amber::before  { background: linear-gradient(90deg, var(--amber), var(--amber2)); }
+.kpi.blue::before   { background: linear-gradient(90deg, var(--blue), var(--blue2)); }
+.kpi.teal::before   { background: linear-gradient(90deg, var(--teal), var(--teal2)); }
+.kpi.purple::before { background: linear-gradient(90deg, var(--purple), var(--purple2)); }
+.kpi.green::before  { background: linear-gradient(90deg, var(--green), #4ade80); }
+
+.kpi-val {
+  font-family: var(--font-display);
+  font-size: 36px;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 0.4rem;
+}
+
+.kpi-lbl {
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.kpi-ci {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+}
+
+.kpi-tag {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+}
+
+.tag-red { background: rgba(232,69,69,0.15); color: var(--red2); }
+.tag-amber { background: rgba(245,158,11,0.15); color: var(--amber2); }
+.tag-blue { background: rgba(59,130,246,0.15); color: var(--blue2); }
+.tag-teal { background: rgba(20,184,166,0.15); color: var(--teal2); }
+
+/* ── CHART CARDS ── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+  letter-spacing: 0.01em;
+}
+
+.card-sub {
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 1.25rem;
+  font-family: var(--font-mono);
+}
+
+.chart-wrap { position: relative; width: 100%; }
+.h260 { height: 260px; }
+.h300 { height: 300px; }
+.h220 { height: 220px; }
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.three-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* ── TREND SECTION ── */
+.trend-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 1rem;
+}
+
+/* ── TABLES ── */
+.table-container {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.tab-row {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg3);
+}
+
+.tab-btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  padding: 0.85rem 1.5rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover { color: var(--text2); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(232,69,69,0.05); }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+table { width: 100%; border-collapse: collapse; }
+thead { background: var(--bg3); }
+th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 0.75rem 1rem;
+  font-size: 12.5px;
+  color: var(--text2);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); color: var(--text); }
+
+/* ── BAR IN TABLE ── */
+.bar-wrap { display: flex; align-items: center; gap: 8px; }
+.bar-track { flex: 1; height: 6px; background: var(--bg4); border-radius: 3px; min-width: 60px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; }
+
+/* ── PILLS ── */
+.pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-family: var(--font-mono);
+}
+.pill-high { background: rgba(232,69,69,0.15); color: var(--red2); }
+.pill-mod  { background: rgba(245,158,11,0.15); color: var(--amber2); }
+.pill-low  { background: rgba(34,197,94,0.15); color: #4ade80; }
+.pill-blue { background: rgba(59,130,246,0.15); color: var(--blue2); }
+
+/* ── HEATMAP ── */
+.heatmap { margin-top: 0.5rem; }
+.hm-labels-x { display: grid; grid-template-columns: 160px repeat(5,1fr); margin-bottom: 4px; }
+.hm-label-x { font-family: var(--font-mono); font-size: 9px; color: var(--text3); text-align: center; letter-spacing: 0.04em; }
+.hm-row { display: grid; grid-template-columns: 160px repeat(5,1fr); gap: 3px; margin-bottom: 3px; align-items: center; }
+.hm-row-label { font-size: 11px; color: var(--text2); }
+.hm-cell {
+  height: 36px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  transition: transform 0.15s;
+}
+.hm-cell:hover { transform: scale(1.05); }
+
+/* ── BURDEN BARS ── */
+.burden-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.burden-item:last-child { border-bottom: none; }
+.burden-label { font-size: 12px; color: var(--text2); width: 240px; flex-shrink: 0; }
+.burden-track { flex: 1; height: 10px; background: var(--bg4); border-radius: 5px; overflow: hidden; }
+.burden-fill { height: 100%; border-radius: 5px; transition: width 1.5s cubic-bezier(0.16,1,0.3,1); width: 0; }
+.burden-val { font-family: var(--font-mono); font-size: 12px; color: var(--text); width: 80px; text-align: right; flex-shrink: 0; }
+
+/* ── REFS ── */
+.refs { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; }
+.ref-item {
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.7;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 1rem;
+}
+.ref-item:last-child { border-bottom: none; }
+.ref-num { font-family: var(--font-mono); font-size: 11px; color: var(--accent); flex-shrink: 0; width: 20px; }
+.ref-item em { font-style: italic; color: var(--text3); }
+.ref-doi { color: var(--blue2); text-decoration: none; }
+.ref-doi:hover { text-decoration: underline; }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 2rem;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+}
+
+footer span { color: var(--accent); }
+
+/* ── DIVIDER ── */
+.page-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+
+/* ── LEGEND ── */
+.legend { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+.leg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text3); }
+.leg-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── STAT CALLOUT ── */
+.stat-callout {
+  background: rgba(232,69,69,0.06);
+  border: 1px solid rgba(232,69,69,0.2);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+.stat-callout-val { font-family: var(--font-display); font-size: 48px; color: var(--red2); line-height: 1; flex-shrink: 0; }
+.stat-callout-txt { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .two-col, .three-col { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+  .hero h1 { font-size: 40px; }
+  .hm-labels-x, .hm-row { grid-template-columns: 100px repeat(5,1fr); }
+  .hm-label-x, .hm-row-label { font-size: 9px; }
+  .burden-label { width: 140px; font-size: 11px; }
+}
+
+/* ── ANIMATE ON SCROLL ── */
+.fade-in {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.6s, transform 0.6s;
+}
+.fade-in.visible {
+  opacity: 1;
+  transform: none;
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <div class="nav-dot"></div>
+    <span class="nav-title">CIPN · Epidemiology Dashboard</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#timecourse">Time-course</a></li>
+    <li><a href="#stratified">Stratified</a></li>
+    <li><a href="#risk">Risk Factors</a></li>
+    <li><a href="#burden">Burden</a></li>
+    <li><a href="#tables">Tables</a></li>
+    <li><a href="#references">References</a></li>
+  </ul>
+  <span class="nav-badge">Data through 2025</span>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <video class="hero-video" autoplay muted loop playsinline>
+    <source src="12601884_1920_1080_30fps.mp4" type="video/mp4">
+  </video>
+  <div class="hero-bg-grid"></div>
+  <div class="hero-glow"></div>
+  <img class="hero-img" src="Screenshot 2026-04-18 231622.png" alt="Dashboard screenshot" />
+  <p class="hero-eyebrow">Global Epidemiology · Oncology Research · 2025 Update</p>
+  <h1>Nikhil Kumar</h1>
+  <p class="hero-registration">Registration number: 25PCM4323</p>
+  <p class="hero-guidance"><strong>Under the Guidance of:<br>Dr. Ashutosh Kumar</strong></p>
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</div>
+
+<hr class="page-divider"/>
+
+<!-- SECTION 1: OVERVIEW KPIs -->
+<section class="section fade-in" id="overview">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <h2 class="section-title">Executive Overview</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi red"><div class="kpi-shimmer"></div>
+      <div class="kpi-val">51.9%</div>
+      <div class="kpi-lbl">Overall global CIPN prevalence</div>
+      <div class="kpi-ci">95% CI: 45.0 – 58.7%</div>
+      <span class="kpi-tag tag-red">49 studies · n=33,667</span>
+    </div>
+    <div class="kpi amber"><div class="kpi-shimmer"></div>
+      <div class="kpi-val">68.1%</div>
+      <div class="kpi-lbl">Prevalence at 1 month post-chemotherapy</div>
+      <div class="kpi-ci">95% CI: 57.7 – 78.4%</div>
+      <span class="kpi-tag tag-amber">Acute phase peak</span>
+    </div>
+    <div class="kpi blue"><div class="kpi-shimmer"></div>
+      <div class="kpi-val">30.0%</div>
+      <div class="kpi-lbl">Persistent CIPN at ≥6 months</div>
+      <div class="kpi-ci">95% CI: 6.4 – 53.5%</div>
+      <span class="kpi-tag tag-blue">Chronic residual</span>
+    </div>
+    <div class="kpi red"><div class="kpi-shimmer"></div>
+      <div class="kpi-val">47.8%</div>
+      <div class="kpi-lbl">Chronic moderate-to-severe CIPN</div>
+      <div class="kpi-ci">95% CI: 37.5 – 58.1%</div>
+      <span class="kpi-tag tag-red">76 studies · 29 countries</span>
+    </div>
+    <div class="kpi purple"><div class="kpi-shimmer"></div>
+      <div class="kpi-val">42%</div>
+      <div class="kpi-lbl">Patients with chronic unremitting CIPN post-treatment</div>
+      <div class="kpi-ci">Narrative review estimate</div>
+      <span class="kpi-tag" style="background:rgba(139,92,246,0.15);color:#a78bfa">High chronicity</span>
+    </div>
+    <div class="kpi teal"><div class="kpi-shimmer"></div>
+      <div class="kpi-val">72.8</div>
+      <div class="kpi-lbl">Incidence per 100 person-years (oxaliplatin + taxane)</div>
+      <div class="kpi-ci">MiroCIP registry, Japan 2025</div>
+      <span class="kpi-tag tag-teal">Grade ≥2 sensory</span>
+    </div>
+    <div class="kpi amber"><div class="kpi-shimmer"></div>
+      <div class="kpi-val">19–85%</div>
+      <div class="kpi-lbl">CIPN rate range across chemotherapy classes</div>
+      <div class="kpi-ci">Drug and cohort dependent</div>
+      <span class="kpi-tag tag-amber">Wide variation</span>
+    </div>
+    <div class="kpi red"><div class="kpi-shimmer"></div>
+      <div class="kpi-val">24.6%</div>
+      <div class="kpi-lbl">Dose-limiting CIPN events in taxane breast cancer</div>
+      <div class="kpi-ci">JCO retrospective cohort n=488</div>
+      <span class="kpi-tag tag-red">Treatment impact</span>
+    </div>
+  </div>
+</section>
+
+<hr class="page-divider"/>
+
+<!-- SECTION 2: TIME COURSE -->
+<section class="section fade-in" id="timecourse">
+  <div class="section-header">
+    <span class="section-num">02</span>
+    <h2 class="section-title">Time-Course Epidemiology</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="card fade-in" style="padding:0;overflow:hidden;">
+    <img src="WhatsApp_timecourse.jpeg" alt="CIPN Time-Course Epidemiology — meta-analytic pooled estimates with 95% CI" style="width:100%;display:block;border-radius:12px;" />
+  </div>
+</section>
+
+<hr class="page-divider"/>
+
+<!-- SECTION 3: STRATIFIED -->
+<section class="section fade-in" id="stratified">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <h2 class="section-title">Stratified Epidemiology</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="two-col">
+    <div class="card fade-in">
+      <div class="card-title">CIPN incidence by chemotherapy class</div>
+      <div class="card-sub">Any-grade CIPN · pooled estimates</div>
+      <div class="chart-wrap h300">
+        <canvas id="drugChart" role="img" aria-label="Horizontal bars: ixabepilone 95.2%, cisplatin 70%, oxaliplatin 64%, docetaxel 50.5%, paclitaxel 48.9%, thalidomide 55%, bortezomib 41%, vincristine 40%">Drug class CIPN rates.</canvas>
+      </div>
+    </div>
+    <div class="card fade-in">
+      <div class="card-title">Chronic mod-to-severe CIPN by cancer type</div>
+      <div class="card-sub">D'Souza et al. 2025 · 76 studies · 29 countries</div>
+      <div class="chart-wrap h300">
+        <canvas id="cancerChart" role="img" aria-label="Breast cancer 61.3%, multiple myeloma 53.6%, lung 50.9%, colorectal 44%, lymphoma 27.7%">Cancer type CIPN prevalence.</canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card fade-in">
+      <div class="card-title">Geographic variation — chronic CIPN prevalence</div>
+      <div class="card-sub">D'Souza et al. 2025 · interpret Africa with caution (wide CI)</div>
+      <div class="chart-wrap h220">
+        <canvas id="geoChart" role="img" aria-label="Africa 71.5%, Europe 49%, Americas 45%, Asia 42%, Oceania 38%">Geographic CIPN variation.</canvas>
+      </div>
+    </div>
+    <div class="card fade-in">
+      <div class="card-title">Sex-stratified chronic CIPN prevalence</div>
+      <div class="card-sub">D'Souza et al. 2025</div>
+      <div style="padding-top:1rem">
+        <div class="burden-item">
+          <div class="burden-label">Women (chronic mod-severe)</div>
+          <div class="burden-track"><div class="burden-fill" style="background:linear-gradient(90deg,#e84545,#ff6b6b)" data-width="59"></div></div>
+          <div class="burden-val">59.3%</div>
+        </div>
+        <div class="burden-item">
+          <div class="burden-label">Men (chronic mod-severe)</div>
+          <div class="burden-track"><div class="burden-fill" style="background:linear-gradient(90deg,#3b82f6,#60a5fa)" data-width="46"></div></div>
+          <div class="burden-val">45.7%</div>
+        </div>
+        <div class="burden-item">
+          <div class="burden-label">Overall painful CIPN (chronic)</div>
+          <div class="burden-track"><div class="burden-fill" style="background:linear-gradient(90deg,#8b5cf6,#a78bfa)" data-width="41"></div></div>
+          <div class="burden-val">40.8%</div>
+        </div>
+        <div class="burden-item">
+          <div class="burden-label">Older adults — elevated toxicity</div>
+          <div class="burden-track"><div class="burden-fill" style="background:linear-gradient(90deg,#f59e0b,#fbbf24)" data-width="55"></div></div>
+          <div class="burden-val">Higher OR</div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:0.75rem;font-family:var(--font-mono)">Wide CI in male stratum; limited sex-disaggregated data</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="page-divider"/>
+
+<!-- SECTION 4: RISK FACTORS HEATMAP -->
+<section class="section fade-in" id="risk">
+  <div class="section-header">
+    <span class="section-num">04</span>
+    <h2 class="section-title">Risk Factor Heatmap</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="two-col" style="align-items:start">
+    <div class="card fade-in">
+      <div class="card-title">Risk factor effect sizes (OR / β)</div>
+      <div class="card-sub">Meta-analytic and cohort-level estimates</div>
+      <div class="chart-wrap" style="height:320px">
+        <canvas id="rfChart" role="img" aria-label="Risk factors: DM overall OR 1.60, DM taxane OR 1.47, female sex, older age, high BMI, low Hb, cumulative dose">Risk factor chart.</canvas>
+      </div>
+    </div>
+    <div class="card fade-in">
+      <div class="card-title">Strength-of-evidence matrix</div>
+      <div class="card-sub">Risk factor × drug class · evidence level</div>
+      <div class="heatmap" style="overflow-x:auto">
+        <div class="hm-labels-x">
+          <div class="hm-label-x"></div>
+          <div class="hm-label-x">Platinum</div>
+          <div class="hm-label-x">Taxane</div>
+          <div class="hm-label-x">Vinca</div>
+          <div class="hm-label-x">PI</div>
+          <div class="hm-label-x">IMiD</div>
+        </div>
+        <!-- rows: risk factor vs drug class; colour = evidence strength -->
+        <div class="hm-row"><div class="hm-row-label">Diabetes mellitus</div><div class="hm-cell" style="background:rgba(232,69,69,0.45);color:#fca5a5">High</div><div class="hm-cell" style="background:rgba(232,69,69,0.5);color:#fca5a5">High</div><div class="hm-cell" style="background:rgba(245,158,11,0.25);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(245,158,11,0.2);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(90,106,126,0.2);color:#8a9ab0">Low</div></div>
+        <div class="hm-row"><div class="hm-row-label">Older age</div><div class="hm-cell" style="background:rgba(232,69,69,0.45);color:#fca5a5">High</div><div class="hm-cell" style="background:rgba(232,69,69,0.45);color:#fca5a5">High</div><div class="hm-cell" style="background:rgba(245,158,11,0.25);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(245,158,11,0.2);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(245,158,11,0.2);color:#fcd34d">Mod</div></div>
+        <div class="hm-row"><div class="hm-row-label">Female sex</div><div class="hm-cell" style="background:rgba(245,158,11,0.3);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(245,158,11,0.3);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(90,106,126,0.2);color:#8a9ab0">Low</div><div class="hm-cell" style="background:rgba(90,106,126,0.2);color:#8a9ab0">Low</div><div class="hm-cell" style="background:rgba(90,106,126,0.2);color:#8a9ab0">Low</div></div>
+        <div class="hm-row"><div class="hm-row-label">High BMI</div><div class="hm-cell" style="background:rgba(245,158,11,0.25);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(245,158,11,0.3);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(90,106,126,0.2);color:#8a9ab0">Low</div><div class="hm-cell" style="background:rgba(90,106,126,0.2);color:#8a9ab0">Low</div><div class="hm-cell" style="background:rgba(90,106,126,0.2);color:#8a9ab0">Low</div></div>
+        <div class="hm-row"><div class="hm-row-label">Low Hb (anemia)</div><div class="hm-cell" style="background:rgba(245,158,11,0.3);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(245,158,11,0.35);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(90,106,126,0.2);color:#8a9ab0">Low</div><div class="hm-cell" style="background:rgba(90,106,126,0.2);color:#8a9ab0">Low</div><div class="hm-cell" style="background:rgba(90,106,126,0.2);color:#8a9ab0">Low</div></div>
+        <div class="hm-row"><div class="hm-row-label">Pre-existing neuropathy</div><div class="hm-cell" style="background:rgba(245,158,11,0.3);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(245,158,11,0.3);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(245,158,11,0.25);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(245,158,11,0.25);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(245,158,11,0.2);color:#fcd34d">Mod</div></div>
+        <div class="hm-row"><div class="hm-row-label">Cumulative dose</div><div class="hm-cell" style="background:rgba(232,69,69,0.45);color:#fca5a5">High</div><div class="hm-cell" style="background:rgba(232,69,69,0.45);color:#fca5a5">High</div><div class="hm-cell" style="background:rgba(232,69,69,0.4);color:#fca5a5">High</div><div class="hm-cell" style="background:rgba(232,69,69,0.4);color:#fca5a5">High</div><div class="hm-cell" style="background:rgba(232,69,69,0.35);color:#fca5a5">High</div></div>
+        <div class="hm-row"><div class="hm-row-label">Low physical activity</div><div class="hm-cell" style="background:rgba(245,158,11,0.2);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(245,158,11,0.2);color:#fcd34d">Mod</div><div class="hm-cell" style="background:rgba(90,106,126,0.2);color:#8a9ab0">Low</div><div class="hm-cell" style="background:rgba(90,106,126,0.2);color:#8a9ab0">Low</div><div class="hm-cell" style="background:rgba(90,106,126,0.2);color:#8a9ab0">Low</div></div>
+        <div style="display:flex;gap:1rem;margin-top:0.75rem;flex-wrap:wrap">
+          <div class="leg-item"><div class="leg-sq" style="background:rgba(232,69,69,0.5)"></div><span style="font-size:10px">High evidence (SR/MA)</span></div>
+          <div class="leg-item"><div class="leg-sq" style="background:rgba(245,158,11,0.3)"></div><span style="font-size:10px">Moderate (cohort)</span></div>
+          <div class="leg-item"><div class="leg-sq" style="background:rgba(90,106,126,0.2)"></div><span style="font-size:10px">Low / limited data</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="page-divider"/>
+
+<!-- SECTION 5: BURDEN -->
+<section class="section fade-in" id="burden">
+  <div class="section-header">
+    <span class="section-num">05</span>
+    <h2 class="section-title">Burden of Disease</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="card fade-in" style="margin-bottom:1rem">
+    <div class="card-title">Treatment impact & dose-modification rates by chemotherapy agent</div>
+    <div class="card-sub">Dose reduction · interruption · cessation attributable to CIPN</div>
+    <div style="padding-top:0.5rem">
+      <div class="burden-item">
+        <div class="burden-label">Oxaliplatin — dose reduction</div>
+        <div class="burden-track"><div class="burden-fill" style="background:linear-gradient(90deg,#e84545,#ff6b6b)" data-width="43"></div></div>
+        <div class="burden-val">15–43%</div>
+      </div>
+      <div class="burden-item">
+        <div class="burden-label">Oxaliplatin — treatment cessation</div>
+        <div class="burden-track"><div class="burden-fill" style="background:linear-gradient(90deg,#e84545,#ff6b6b)" data-width="21"></div></div>
+        <div class="burden-val">6–21%</div>
+      </div>
+      <div class="burden-item">
+        <div class="burden-label">Paclitaxel — dose-limiting events (breast cancer)</div>
+        <div class="burden-track"><div class="burden-fill" style="background:linear-gradient(90deg,#f59e0b,#fbbf24)" data-width="16"></div></div>
+        <div class="burden-val">16.1%</div>
+      </div>
+      <div class="burden-item">
+        <div class="burden-label">Docetaxel — dose-limiting events (breast cancer)</div>
+        <div class="burden-track"><div class="burden-fill" style="background:linear-gradient(90deg,#3b82f6,#60a5fa)" data-width="3"></div></div>
+        <div class="burden-val">2.4%</div>
+      </div>
+      <div class="burden-item">
+        <div class="burden-label">Up to 65% of patients — QoL impairment, fall risk</div>
+        <div class="burden-track"><div class="burden-fill" style="background:linear-gradient(90deg,#8b5cf6,#a78bfa)" data-width="65"></div></div>
+        <div class="burden-val">Up to 65%</div>
+      </div>
+      <div class="burden-item">
+        <div class="burden-label">Chronic unremitting CIPN (any agent)</div>
+        <div class="burden-track"><div class="burden-fill" style="background:linear-gradient(90deg,#e84545,#ff6b6b)" data-width="42"></div></div>
+        <div class="burden-val">42%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="three-col">
+    <div class="card fade-in" style="border-color:rgba(232,69,69,0.3)">
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--red2);margin-bottom:0.5rem;letter-spacing:0.06em">CANCER SURVIVAL RISK</div>
+      <div class="card-title">CIPN-driven dose reductions in curative-intent adjuvant therapy can reduce efficacy and negatively affect cancer survival outcomes in breast and colorectal cancer.</div>
+    </div>
+    <div class="card fade-in" style="border-color:rgba(245,158,11,0.3)">
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--amber2);margin-bottom:0.5rem;letter-spacing:0.06em">FALL RISK</div>
+      <div class="card-title">CIPN is a significant contributor to fall risk in hospitalized patients undergoing chemotherapy, identified as an independent factor in multivariate logistic models (Japan, n=21,717).</div>
+    </div>
+    <div class="card fade-in" style="border-color:rgba(59,130,246,0.3)">
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--blue2);margin-bottom:0.5rem;letter-spacing:0.06em">PSYCHOLOGICAL</div>
+      <div class="card-title">CIPN is independently associated with depression, anxiety, insomnia, reduced physical wellbeing, and impaired fine motor function, compounding cancer survivorship burden.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="page-divider"/>
+
+<!-- SECTION 6: DATA TABLES -->
+<section class="section fade-in" id="tables">
+  <div class="section-header">
+    <span class="section-num">06</span>
+    <h2 class="section-title">Data Tables</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="table-container">
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="showTab('tab1',this)">Table 1: Incidence by Study</button>
+      <button class="tab-btn" onclick="showTab('tab2',this)">Table 2: Drug-wise CIPN Rates</button>
+      <button class="tab-btn" onclick="showTab('tab3',this)">Table 3: Risk Factors</button>
+    </div>
+
+    <div id="tab1" class="tab-panel active">
+      <table>
+        <thead>
+          <tr><th>Study</th><th>Year</th><th>Design</th><th>n</th><th>CIPN Prevalence / Incidence</th><th>Timepoint</th><th>Quality</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Seretny et al. (SR/MA)</td><td>2014</td><td>Meta-analysis</td><td>4,179</td><td>68.1% (57.7–78.4%)</td><td>1 month</td><td><span class="pill pill-high">High</span></td></tr>
+          <tr><td>Seretny et al. (SR/MA)</td><td>2014</td><td>Meta-analysis</td><td>4,179</td><td>60.0% (36.4–81.6%)</td><td>3 months</td><td><span class="pill pill-high">High</span></td></tr>
+          <tr><td>Seretny et al. (SR/MA)</td><td>2014</td><td>Meta-analysis</td><td>4,179</td><td>30.0% (6.4–53.5%)</td><td>≥6 months</td><td><span class="pill pill-high">High</span></td></tr>
+          <tr><td>Rahmanian et al. (MA)</td><td>2024</td><td>SR + Meta-analysis</td><td>33,667</td><td>51.9% (45.0–58.7%)</td><td>Overall pooled</td><td><span class="pill pill-high">High</span></td></tr>
+          <tr><td>D'Souza et al. (MA)</td><td>2025</td><td>SR + Meta-analysis</td><td>13,635</td><td>47.8% (37.5–58.1%)</td><td>Chronic ≥3 months</td><td><span class="pill pill-high">High</span></td></tr>
+          <tr><td>MiroCIP Registry (Japan)</td><td>2025</td><td>Prospective cohort</td><td>NR</td><td>72.8 per 100 PY</td><td>12 months</td><td><span class="pill pill-high">High</span></td></tr>
+          <tr><td>Maksten et al. (NOVIT)</td><td>2025</td><td>Prospective cohort</td><td>23</td><td>47.8%</td><td>During + post-tx</td><td><span class="pill pill-mod">Moderate</span></td></tr>
+          <tr><td>Baltussen et al. (JAMA NO)</td><td>2023</td><td>Cohort (older adults)</td><td>NR</td><td>Elevated vs younger</td><td>During tx</td><td><span class="pill pill-high">High</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="tab2" class="tab-panel">
+      <table>
+        <thead>
+          <tr><th>Agent / Class</th><th>CIPN Rate (any grade)</th><th>Grade ≥2 Rate</th><th>Primary Cancer</th><th>Neuropathy Type</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Ixabepilone (epothilone)</td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:95%;background:#e84545"></div></div>95.2%</div></td><td>~40–50%</td><td>Breast cancer</td><td>Sensory (severe)</td></tr>
+          <tr><td>Cisplatin (platinum)</td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:70%;background:#f59e0b"></div></div>~70%</div></td><td>~30%</td><td>Testicular, lung</td><td>Sensory; coasting</td></tr>
+          <tr><td>Oxaliplatin (platinum)</td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:64%;background:#f59e0b"></div></div>58–70%</div></td><td>15–43% (dose reduction)</td><td>Colorectal</td><td>Sensory + cold allodynia</td></tr>
+          <tr><td>Docetaxel (taxane)</td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:51%;background:#3b82f6"></div></div>50.5%</div></td><td>~5%</td><td>Breast, prostate</td><td>Less neurotoxic than paclitaxel</td></tr>
+          <tr><td>Paclitaxel (taxane)</td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:49%;background:#3b82f6"></div></div>48.9%</div></td><td>~16% dose-limiting</td><td>Breast, ovarian</td><td>Sensory + motor (severe)</td></tr>
+          <tr><td>Thalidomide (IMiD)</td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:55%;background:#8b5cf6"></div></div>40–70%</div></td><td>~25%</td><td>Multiple myeloma</td><td>Sensory; cumulative</td></tr>
+          <tr><td>Bortezomib (proteasome inhib.)</td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:41%;background:#14b8a6"></div></div>41–44%</div></td><td>18% gr.≥2; 4% gr.≥3</td><td>Multiple myeloma</td><td>Painful sensory</td></tr>
+          <tr><td>Vincristine (vinca alkaloid)</td><td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:40%;background:#22c55e"></div></div>35–45%</div></td><td>~20%</td><td>Lymphoma, ALL</td><td>Sensory+motor; autonomic</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="tab3" class="tab-panel">
+      <table>
+        <thead>
+          <tr><th>Risk Factor</th><th>Effect Size</th><th>95% CI</th><th>Evidence Level</th><th>Drug Class</th><th>Source</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Diabetes mellitus (overall)</td><td>OR = 1.60</td><td>1.38–1.85</td><td><span class="pill pill-high">High (MA)</span></td><td>All classes</td><td>Gu et al. 2021</td></tr>
+          <tr><td>Diabetes mellitus (taxane)</td><td>OR = 1.47</td><td>1.11–1.93</td><td><span class="pill pill-high">High (MA)</span></td><td>Taxane</td><td>Gu et al. 2021</td></tr>
+          <tr><td>Older age</td><td>β = 0.088</td><td>0.053–0.122</td><td><span class="pill pill-high">High (cohort)</span></td><td>Platinum, taxane</td><td>Timmins et al. 2021</td></tr>
+          <tr><td>Female sex</td><td>β = −1.08</td><td>−1.76–−0.16</td><td><span class="pill pill-mod">Moderate</span></td><td>Platinum, taxane</td><td>Timmins et al. 2021</td></tr>
+          <tr><td>Higher BMI / obesity</td><td>β = 0.08</td><td>0.02–0.12</td><td><span class="pill pill-mod">Moderate (SR)</span></td><td>Platinum, taxane</td><td>Timmins et al. 2021</td></tr>
+          <tr><td>Low pretreatment hemoglobin</td><td>β = −0.47</td><td>−0.73–−0.21</td><td><span class="pill pill-mod">Moderate (cohort)</span></td><td>Paclitaxel, oxaliplatin</td><td>Timmins et al. 2021</td></tr>
+          <tr><td>Pre-existing neuropathy</td><td>Elevated (NR)</td><td>NR</td><td><span class="pill pill-mod">Moderate (SR)</span></td><td>All classes</td><td>Seretny et al. 2014</td></tr>
+          <tr><td>Cumulative chemotherapy dose</td><td>Dose-dependent</td><td>NR</td><td><span class="pill pill-high">High (SR/RCT)</span></td><td>All neurotoxic agents</td><td>Multiple</td></tr>
+          <tr><td>Low physical activity</td><td>Elevated (NR)</td><td>NR</td><td><span class="pill pill-mod">Moderate (SR)</span></td><td>Taxane, platinum</td><td>Hershman et al.</td></tr>
+          <tr><td>Large waist circumference</td><td>β = 0.030</td><td>0.001–0.059</td><td><span class="pill pill-mod">Moderate</span></td><td>Taxane</td><td>Cohort</td></tr>
+          <tr><td>Abnormal creatinine clearance</td><td>Elevated</td><td>NR</td><td><span class="pill pill-low">Low</span></td><td>Platinum</td><td>Seretny et al. 2014</td></tr>
+          <tr><td>Smoking history</td><td>Elevated</td><td>NR</td><td><span class="pill pill-low">Low</span></td><td>Multiple</td><td>Seretny et al. 2014</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<hr class="page-divider"/>
+
+<!-- SECTION 7: REFERENCES -->
+<section class="section fade-in" id="references">
+  <div class="section-header">
+    <span class="section-num">07</span>
+    <h2 class="section-title">References</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="refs">
+    <div class="ref-item"><span class="ref-num">1.</span><span>D'Souza RS, Saini C, Hussain N, Javed S, Prokop L, Her YF. Global estimates of prevalence of chronic painful neuropathy and moderate-to-severe neuropathy among patients with CIPN: a systematic review and meta-analysis of data from 29 countries between 2000 and 2024. <em>Reg Anesth Pain Med.</em> 2025 Dec 4. <a class="ref-doi" href="https://doi.org/10.1136/rapm-2024-106229" target="_blank">doi:10.1136/rapm-2024-106229</a></span></div>
+    <div class="ref-item"><span class="ref-num">2.</span><span>Rahmanian M, et al. The global prevalence of peripheral neuropathy following chemotherapy in cancer patients: a systematic review and meta-analysis. <em>Orphanet J Rare Dis.</em> 2024. <a class="ref-doi" href="https://doi.org/10.1186/s13023-026-04256-y" target="_blank">doi:10.1186/s13023-026-04256-y</a></span></div>
+    <div class="ref-item"><span class="ref-num">3.</span><span>Maksten EF, Mørch CD, Jakobsen LH, et al. The course of CIPN in hematological patients treated with vincristine, bortezomib, or lenalidomide: the NOVIT study. <em>Support Care Cancer.</em> 2025;33. <a class="ref-doi" href="https://doi.org/10.1007/s00520-025-09282-3" target="_blank">doi:10.1007/s00520-025-09282-3</a></span></div>
+    <div class="ref-item"><span class="ref-num">4.</span><span>Misawa S, et al. One-year incidence of CIPN in oxaliplatin- or taxane-based chemotherapy: a multicenter, prospective registry study (MiroCIP). <em>Expert Opin Pharmacother.</em> 2025;26(3):335–344. <a class="ref-doi" href="https://doi.org/10.1080/14656566.2025.2455445" target="_blank">doi:10.1080/14656566.2025.2455445</a></span></div>
+    <div class="ref-item"><span class="ref-num">5.</span><span>Baltussen JC, de Glas NA, van Holstein Y, et al. Chemotherapy-related toxic effects and quality of life in older patients. <em>JAMA Netw Open.</em> 2023;6:e2339116.</span></div>
+    <div class="ref-item"><span class="ref-num">6.</span><span>Tamayo Fajardo JA, León Parejo F. Effectiveness of exercise and physiotherapy in CIPN: a systematic review. <em>Healthcare.</em> 2025;13(22):2973. <a class="ref-doi" href="https://doi.org/10.3390/healthcare13222973" target="_blank">doi:10.3390/healthcare13222973</a></span></div>
+    <div class="ref-item"><span class="ref-num">7.</span><span>Gallois C, Shi Q, Meyers JP, et al. Prognostic impact of oxaliplatin discontinuation in stage III colon cancer: ACCENT/IDEA pooled analysis of 11 adjuvant trials. <em>J Clin Oncol.</em> 2023;41:803–815.</span></div>
+    <div class="ref-item"><span class="ref-num">8.</span><span>Baltussen M, et al. Chemotherapy-induced peripheral neuropathy: a narrative review and proposed 3P theoretical model. <em>Cancers.</em> 2024;16(14):2571. <a class="ref-doi" href="https://doi.org/10.3390/cancers16142571" target="_blank">doi:10.3390/cancers16142571</a></span></div>
+    <div class="ref-item"><span class="ref-num">9.</span><span>Gu J, Lu H, et al. Diabetes mellitus as a risk factor for CIPN: a meta-analysis. <em>Support Care Cancer.</em> 2021. [Foundational risk factor MA cited in 2023–2025 clinical guidelines]</span></div>
+    <div class="ref-item"><span class="ref-num">10.</span><span>Timmins HC, Li T, Goldstein D, et al. Hemoglobin, body mass index, and age as risk factors for paclitaxel- and oxaliplatin-induced peripheral neuropathy. <em>JAMA Oncol.</em> 2021;7(3). <a class="ref-doi" href="https://doi.org/10.1001/jamaoncol.2020.7136" target="_blank">doi:10.1001/jamaoncol.2020.7136</a></span></div>
+    <div class="ref-item"><span class="ref-num">11.</span><span>Seretny M, Currie GL, Sena ES, et al. Incidence, prevalence, and predictors of CIPN: a systematic review and meta-analysis. <em>Pain.</em> 2014;155(12):2461–2470. <a class="ref-doi" href="https://doi.org/10.1016/j.pain.2014.09.020" target="_blank">doi:10.1016/j.pain.2014.09.020</a> [Foundational benchmark]</span></div>
+    <div class="ref-item"><span class="ref-num">12.</span><span>Huynh W, et al. An emerging aspect of cancer neuroscience: a literature review on CIPN. <em>Cancer Lett.</em> 2024. <a class="ref-doi" href="https://doi.org/10.1016/j.canlet.2024.008280" target="_blank">doi:10.1016/j.canlet.2024.008280</a></span></div>
+  </div>
+</section>
+
+<hr class="page-divider"/>
+
+<footer>
+  <span>CIPN Epidemiology Dashboard</span> · Compiled from 2014–2025 peer-reviewed literature · For research and clinical use only · Data synthesis by AI-assisted review<br/>
+  <span style="display:block;margin-top:0.5rem;color:rgba(90,106,126,0.6)">NIPER SAS Nagar · Oncology & Neuropharmacology Research</span>
+</footer>
+
+<script>
+// ── TAB TOGGLE
+function showTab(id, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── CHART DEFAULTS
+const tc = 'rgba(255,255,255,0.45)';
+const gc = 'rgba(255,255,255,0.06)';
+const baseOpts = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { ticks: { color: tc, font: { size: 11 } }, grid: { color: gc }, border: { color: 'transparent' } },
+    y: { ticks: { color: tc, font: { size: 11 } }, grid: { color: gc }, border: { color: 'transparent' } }
+  }
+};
+
+// ── TREND CHART
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: ['1 month', '3 months', '≥6 months'],
+    datasets: [
+      { data: [78.4, 81.6, 53.5], fill: '+1', backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 0, pointRadius: 0, tension: 0.4 },
+      { label: 'Pooled %', data: [68.1, 60.0, 30.0], borderColor: '#3b82f6', borderWidth: 2.5, backgroundColor: '#3b82f6', pointRadius: 6, pointBackgroundColor: '#3b82f6', fill: false, tension: 0.4 },
+      { data: [57.7, 36.4, 6.4], fill: '-1', backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 0, pointRadius: 0, tension: 0.4 }
+    ]
+  },
+  options: {
+    ...baseOpts,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.dataset.label ? c.dataset.label + ': ' + c.parsed.y.toFixed(1) + '%' : null } } },
+    scales: {
+      x: { ticks: { color: tc, font: { size: 12 } }, grid: { color: gc }, border: { color: 'transparent' } },
+      y: { min: 0, max: 100, ticks: { color: tc, font: { size: 11 }, callback: v => v + '%' }, grid: { color: gc }, border: { color: 'transparent' } }
+    }
+  }
+});
+
+// ── DRUG CHART
+new Chart(document.getElementById('drugChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Ixabepilone','Cisplatin','Oxaliplatin','Thalidomide','Docetaxel','Paclitaxel','Bortezomib','Vincristine'],
+    datasets: [{
+      data: [95.2, 70, 64, 55, 50.5, 48.9, 41, 40],
+      backgroundColor: ['#e84545','#f59e0b','#f59e0b','#8b5cf6','#3b82f6','#3b82f6','#14b8a6','#22c55e'],
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: {
+    ...baseOpts,
+    indexAxis: 'y',
+    scales: {
+      x: { min: 0, max: 100, ticks: { color: tc, font: { size: 10 }, callback: v => v + '%' }, grid: { color: gc }, border: { color: 'transparent' } },
+      y: { ticks: { color: tc, font: { size: 10 } }, grid: { display: false }, border: { color: 'transparent' } }
+    }
+  }
+});
+
+// ── CANCER CHART
+new Chart(document.getElementById('cancerChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Breast cancer','Multiple myeloma','Lung cancer','Colorectal','Lymphoma'],
+    datasets: [{
+      data: [61.3, 53.6, 50.9, 44, 27.7],
+      backgroundColor: ['#e84545','#8b5cf6','#3b82f6','#f59e0b','#22c55e'],
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: {
+    ...baseOpts,
+    indexAxis: 'y',
+    scales: {
+      x: { min: 0, max: 80, ticks: { color: tc, font: { size: 10 }, callback: v => v + '%' }, grid: { color: gc }, border: { color: 'transparent' } },
+      y: { ticks: { color: tc, font: { size: 10 } }, grid: { display: false }, border: { color: 'transparent' } }
+    }
+  }
+});
+
+// ── GEO CHART
+new Chart(document.getElementById('geoChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Africa*','Europe','Americas','Asia','Oceania'],
+    datasets: [{
+      data: [71.5, 49, 45, 42, 38],
+      backgroundColor: ['#e84545','#3b82f6','#8b5cf6','#14b8a6','#f59e0b'],
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: {
+    ...baseOpts,
+    scales: {
+      x: { ticks: { color: tc, font: { size: 10 } }, grid: { display: false }, border: { color: 'transparent' } },
+      y: { min: 0, max: 85, ticks: { color: tc, font: { size: 10 }, callback: v => v + '%' }, grid: { color: gc }, border: { color: 'transparent' } }
+    }
+  }
+});
+
+// ── RISK FACTOR CHART
+new Chart(document.getElementById('rfChart'), {
+  type: 'bar',
+  data: {
+    labels: ['DM (overall)\nOR', 'DM (taxane)\nOR', 'Older age\nβ×10', 'High BMI\nβ×10', 'Low Hb\n|β|×5','Cum. dose\n(nominal)','Low PA\n(nominal)'],
+    datasets: [{
+      label: 'Effect size',
+      data: [1.60, 1.47, 0.88, 0.80, 2.35, 2.0, 1.2],
+      backgroundColor: ['#e84545','#e84545','#f59e0b','#f59e0b','#3b82f6','#8b5cf6','#14b8a6'],
+      borderRadius: 4, borderSkipped: false
+    }]
+  },
+  options: {
+    ...baseOpts,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: c => {
+            const lbl = ['OR=1.60','OR=1.47','β=0.088','β=0.08','|β|=0.47','High (SR)','Moderate (SR)'][c.dataIndex];
+            return lbl;
+          }
+        }
+      }
+    },
+    scales: {
+      x: { ticks: { color: tc, font: { size: 10 }, maxRotation: 30 }, grid: { display: false }, border: { color: 'transparent' } },
+      y: { ticks: { color: tc, font: { size: 10 } }, grid: { color: gc }, border: { color: 'transparent' } }
+    }
+  }
+});
+
+// ── SCROLL ANIMATE BURDEN BARS
+function animateBars() {
+  document.querySelectorAll('.burden-fill[data-width]').forEach(el => {
+    el.style.width = el.dataset.width + '%';
+  });
+}
+
+// ── INTERSECTION OBSERVER
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      if (entry.target.querySelector('.burden-fill')) animateBars();
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+// Trigger on load if already in view
+setTimeout(animateBars, 500);
+
+// ── KPI MOUSE SPOTLIGHT — dynamic border follows cursor
+document.querySelectorAll('.kpi').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    card.style.setProperty('--mx', x + '%');
+    card.style.setProperty('--my', y + '%');
+    // dynamic border glow follows cursor
+    card.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 60%)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.background = '';
+  });
+});
+</script>
+</body>
+</html>
+
+
+
